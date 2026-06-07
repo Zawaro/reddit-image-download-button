@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reddit Image Download Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Reddit Image Download</h1>
+    <p class="subtitle">Configure how images are downloaded from Reddit</p>
+
+    <form id="settings-form">
+      <section class="settings-section">
+        <h2>Download Mode</h2>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="downloadMode" value="saveAs" checked>
+            <span class="radio-custom"></span>
+            <span class="radio-text">
+              <strong>Save As dialog</strong>
+              <small>Show native Save As dialog for each image</small>
+            </span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="downloadMode" value="auto" id="radio-auto">
+            <span class="radio-custom"></span>
+            <span class="radio-text" id="download-mode-text">
+              <strong id="download-mode-label">Auto</strong>
+              <small id="download-mode-desc">Automatically downloads to configured folder. May show Save As dialog in some cases.</small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Folder Settings</h2>
+        <div class="form-group">
+          <label for="baseFolder">Base Folder</label>
+          <input type="text" id="baseFolder" name="baseFolder" value="" placeholder="">
+          <small>
+            Path relative to your Downloads folder. Example: <code>RedditImages</code> saves to <code>~/Downloads/RedditImages/</code>.
+            Use <code>{base}/{year}-{month}</code> pattern to organize by date.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="folderPattern">Folder Pattern</label>
+          <input type="text" id="folderPattern" name="folderPattern" value="{base}/{year}-{month}" placeholder="{base}/{year}-{month}">
+          <small>Use variables: <code>{base}</code>, <code>{year}</code>, <code>{month}</code>, <code>{day}</code>, <code>{subreddit}</code>, <code>{author}</code></small>
+        </div>
+
+        <div class="pattern-preview">
+          <strong>Preview:</strong>
+          <span id="pattern-preview-text">RedditImages/2026-06</span>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Filename Format</h2>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="filenameFormat" value="title" checked>
+            <span class="radio-custom"></span>
+            <span class="radio-text">
+              <strong>Title</strong>
+              <small><code>{truncated_title}_{index}.{ext}</code></small>
+            </span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="filenameFormat" value="subreddit-title">
+            <span class="radio-custom"></span>
+            <span class="radio-text">
+              <strong>Subreddit + Title</strong>
+              <small><code>{subreddit}-{truncated_title}_{index}.{ext}</code></small>
+            </span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="filenameFormat" value="imageId">
+            <span class="radio-custom"></span>
+            <span class="radio-text">
+              <strong>Image ID</strong>
+              <small><code>{image_id}.{ext}</code></small>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Title Settings</h2>
+        <div class="form-group">
+          <label for="maxTitleLength">Max Title Length</label>
+          <input type="number" id="maxTitleLength" name="maxTitleLength" value="50" min="10" max="100">
+          <small>Truncate post titles longer than this value</small>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Advanced</h2>
+        <div class="form-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="debugLogging" name="debugLogging">
+            <span class="toggle-switch"></span>
+            <span>Enable debug logging</span>
+          </label>
+          <small>Show detailed logs in browser console (F12). Disable for normal use.</small>
+        </div>
+      </section>
+
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        <button type="button" id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+      </div>
+    </form>
+
+    <div id="status" class="status hidden"></div>
+  </div>
+
+  <script type="module" src="options.ts"></script>
+</body>
+</html>
