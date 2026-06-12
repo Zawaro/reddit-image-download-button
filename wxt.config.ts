@@ -8,6 +8,7 @@ export default defineConfig({
   },
   hooks: {
     'build:manifestGenerated': (_ctx, manifest) => {
+      if (manifest.browser_specific_settings?.gecko) return;
       try {
         const count = execSync('git rev-list --count HEAD', {
           encoding: 'utf-8',
@@ -46,7 +47,13 @@ export default defineConfig({
         browser_specific_settings: {
           gecko: {
             id: 'reddit-image-download@zawaro',
-            strict_min_version: '109.0',
+            strict_min_version: '140.0',
+            data_collection_permissions: {
+              required: ['none'],
+            },
+          },
+          gecko_android: {
+            strict_min_version: '142.0',
           },
         },
       });

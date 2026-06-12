@@ -1,7 +1,3 @@
-export const DOWNLOAD_ICON = `<svg rpl="" aria-hidden="true" fill="currentColor" height="16" width="16" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 0a10 10 0 1010 10A10.011 10.011 0 0010 0zm0 18a8 8 0 118-8 8.009 8.009 0 01-8 8zm1-13v6.586l2.293-2.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L9 11.586V5a1 1 0 012 0z"></path></svg>`;
-export const CHECK_ICON = `<svg rpl="" aria-hidden="true" fill="currentColor" height="16" width="16" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 0C4.486 0 0 4.486 0 10s4.486 10 10 10 10-4.486 10-10S15.514 0 10 0zm4.293 7.293l-4.5 6a.997.997 0 01-1.468.106l-2.5-2.5a.999.999 0 111.414-1.414l1.744 1.744 3.781-5.054a.999.999 0 111.54 1.118z"></path></svg>`;
-export const SPINNER_ICON = `<svg rpl="" aria-hidden="true" fill="currentColor" height="16" width="16" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" class="rd-spinner"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="50" stroke-linecap="round"/></svg>`;
-
 export const REDDIT_BUTTON_CLASSES =
   'button border-sm flex flex-row justify-center items-center h-xl font-semibold relative text-label-2 button-secondary inline-flex items-center px-sm py-xs';
 
@@ -20,6 +16,54 @@ export type ButtonState =
   | 'notfound'
   | 'error'
   | 'idle';
+
+function createSvgIcon(d: string, viewBox: string, className?: string): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', viewBox);
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('height', '16');
+  svg.setAttribute('width', '16');
+  if (className) svg.setAttribute('class', className);
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  svg.appendChild(path);
+  return svg;
+}
+
+function createDownloadSvg(): SVGSVGElement {
+  return createSvgIcon(
+    'M10 0a10 10 0 1010 10A10.011 10.011 0 0010 0zm0 18a8 8 0 118-8 8.009 8.009 0 01-8 8zm1-13v6.586l2.293-2.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L9 11.586V5a1 1 0 012 0z',
+    '0 0 20 20',
+  );
+}
+
+function createCheckSvg(): SVGSVGElement {
+  return createSvgIcon(
+    'M10 0C4.486 0 0 4.486 0 10s4.486 10 10 10 10-4.486 10-10S15.514 0 10 0zm4.293 7.293l-4.5 6a.997.997 0 01-1.468.106l-2.5-2.5a.999.999 0 111.414-1.414l1.744 1.744 3.781-5.054a.999.999 0 111.54 1.118z',
+    '0 0 20 20',
+  );
+}
+
+function createSpinnerSvg(): SVGSVGElement {
+  const svg = createSvgIcon(
+    '',
+    '0 0 20 20',
+    'rd-spinner',
+  );
+  svg.removeChild(svg.firstChild!);
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', '10');
+  circle.setAttribute('cy', '10');
+  circle.setAttribute('r', '8');
+  circle.setAttribute('stroke', 'currentColor');
+  circle.setAttribute('stroke-width', '2');
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke-dasharray', '50');
+  circle.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(circle);
+  return svg;
+}
 
 export function injectKeyframes(): void {
   if (document.getElementById('rd-keyframes')) return;
@@ -42,17 +86,32 @@ export function createDownloadButton(
   btn.setAttribute('style', 'height: var(--size-button-sm-h);');
 
   const text = imageCount > 1 ? `Download (${imageCount})` : 'Download';
-  btn.innerHTML = `
-    <span class="flex items-center">
-      <span class="flex text-body-1 me-2xs">${DOWNLOAD_ICON}</span>
-      <span>${text}</span>
-    </span>
-    <faceplate-screen-reader-content>${text}</faceplate-screen-reader-content>
-  `;
+
+  const outerSpan = document.createElement('span');
+  outerSpan.className = 'flex items-center';
+
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'flex text-body-1 me-2xs';
+  iconSpan.appendChild(createDownloadSvg());
+  outerSpan.appendChild(iconSpan);
+
+  const textSpan = document.createElement('span');
+  textSpan.textContent = text;
+  outerSpan.appendChild(textSpan);
+
+  btn.appendChild(outerSpan);
+
+  const sr = document.createElement('faceplate-screen-reader-content');
+  sr.textContent = text;
+  btn.appendChild(sr);
 
   (btn as unknown as Record<string, HTMLElement>)[refAttr] = postElement;
   btn.addEventListener('click', clickHandler);
   return btn;
+}
+
+function replaceIcon(container: HTMLElement, svg: SVGSVGElement): void {
+  container.replaceChildren(svg);
 }
 
 export function setButtonState(btn: HTMLButtonElement, state: ButtonState): void {
@@ -71,25 +130,25 @@ export function setButtonState(btn: HTMLButtonElement, state: ButtonState): void
   switch (state) {
     case 'loading':
       btn.disabled = true;
-      if (iconContainer) iconContainer.innerHTML = SPINNER_ICON;
+      if (iconContainer) replaceIcon(iconContainer, createSpinnerSvg());
       if (textContainer) textContainer.textContent = 'Loading...';
       if (screenReader) screenReader.textContent = 'Loading...';
       break;
     case 'probing':
       btn.disabled = true;
-      if (iconContainer) iconContainer.innerHTML = SPINNER_ICON;
+      if (iconContainer) replaceIcon(iconContainer, createSpinnerSvg());
       if (textContainer) textContainer.textContent = 'Checking...';
       if (screenReader) screenReader.textContent = 'Checking images...';
       break;
     case 'downloading':
       btn.disabled = true;
-      if (iconContainer) iconContainer.innerHTML = SPINNER_ICON;
+      if (iconContainer) replaceIcon(iconContainer, createSpinnerSvg());
       if (textContainer) textContainer.textContent = 'Downloading...';
       if (screenReader) screenReader.textContent = 'Downloading...';
       break;
     case 'success':
       btn.disabled = true;
-      if (iconContainer) iconContainer.innerHTML = CHECK_ICON;
+      if (iconContainer) replaceIcon(iconContainer, createCheckSvg());
       if (textContainer) textContainer.textContent = 'Downloaded';
       if (screenReader) screenReader.textContent = 'Downloaded';
       setTimeout(() => setButtonState(btn, 'idle'), 2000);
@@ -109,7 +168,7 @@ export function setButtonState(btn: HTMLButtonElement, state: ButtonState): void
     case 'idle':
     default:
       btn.disabled = false;
-      if (iconContainer) iconContainer.innerHTML = DOWNLOAD_ICON;
+      if (iconContainer) replaceIcon(iconContainer, createDownloadSvg());
       if (textContainer) textContainer.textContent = originalText;
       if (screenReader) screenReader.textContent = originalText;
       break;

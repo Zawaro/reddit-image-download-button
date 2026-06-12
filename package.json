@@ -13,6 +13,7 @@
     "zip": "wxt zip",
     "zip:chrome": "wxt -b chrome zip",
     "zip:firefox": "wxt -b firefox zip",
+    "zip:firefox:release": "wxt -b firefox zip && node scripts/rename-zip.mjs",
     "compile": "wxt prepare"
   },
   "devDependencies": {
