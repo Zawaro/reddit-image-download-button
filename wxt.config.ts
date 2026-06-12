@@ -45,6 +45,7 @@ export default defineConfig({
       Object.assign(base, {
         browser_specific_settings: {
           gecko: {
+            id: 'reddit-image-download@zawaro',
             strict_min_version: '109.0',
           },
         },
