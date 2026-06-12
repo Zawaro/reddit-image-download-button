@@ -46,6 +46,7 @@ export default defineBackground(() => {
       } else {
         downloadOptions.filename = relativeFilename;
         downloadOptions.conflictAction = 'uniquify';
+        downloadOptions.saveAs = false;
       }
 
       const downloadId = await browser.downloads.download(

@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { renameSync, readdirSync } from 'fs';
 
-const version = '1.0.0';
+const version = '1.0.1';
 
 try {
   const count = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
