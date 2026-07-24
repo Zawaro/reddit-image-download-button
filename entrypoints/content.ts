@@ -73,26 +73,6 @@ export default defineContentScript({
       return sr ? sr.querySelector('shreddit-post-text-body') : null;
     }
 
-    function hasImages(post: Element): boolean {
-      const mediaContainer = post.querySelector('div[slot="post-media-container"]');
-      const textBodyHost = findTextBodyHost(post);
-
-      const hasGallery = mediaContainer?.querySelector('gallery-carousel');
-      const hasMediaImage = mediaContainer?.querySelector(
-        'shreddit-aspect-ratio img, img.media-lightbox-img',
-      );
-      const hasTextBodyImage = textBodyHost?.querySelector(
-        "img[src*='preview.redd.it'], img[src*='i.redd.it']",
-      );
-      const hasVideo = mediaContainer?.querySelector(
-        'shreddit-player, shreddit-player-2',
-      );
-
-      if (hasVideo && !hasGallery && !hasMediaImage && !hasTextBodyImage)
-        return false;
-      return !!(hasGallery || hasMediaImage || hasTextBodyImage);
-    }
-
     function getImageCount(post: Element): number {
       const mediaContainer = post.querySelector('div[slot="post-media-container"]');
       const textBodyHost = findTextBodyHost(post);
@@ -188,6 +168,18 @@ export default defineContentScript({
       return images;
     }
 
+    // ponytail: probe from content script to avoid Firefox MV3 CORS issue with background fetch
+    function probeImage(url: string): Promise<{ available: boolean; url: string; error?: string }> {
+      return fetch(url, { method: 'HEAD' }).then(
+        (response) => ({ available: response.ok, url }),
+        (error: Error) => ({ available: false, url, error: error.message }),
+      );
+    }
+
+    function probeImages(urls: string[]): Promise<Array<{ available: boolean; url: string; error?: string }>> {
+      return Promise.all(urls.map(probeImage));
+    }
+
     function extractPostMetadata(post: Element): {
       title: string;
       author: string;
@@ -238,34 +230,25 @@ export default defineContentScript({
 
     function injectButton(post: Element): void {
       if (post.hasAttribute(PROCESSED_ATTR)) {
-        const sr = post.shadowRoot;
-        if (sr) {
-          const existingBtn = sr.querySelector(
-            'button[aria-label="Download images"]',
-          );
-          if (existingBtn) return;
-        }
+        const existingBtn = post.querySelector(
+          'button[aria-label="Download images"]',
+        );
+        if (existingBtn) return;
         post.removeAttribute(PROCESSED_ATTR);
       }
-      if (!hasImages(post)) return;
 
       post.setAttribute(PROCESSED_ATTR, 'true');
 
-      const shadowRoot = post.shadowRoot;
-      if (!shadowRoot) {
-        log.warn('No shadow root found for post:', post.id);
-        return;
-      }
-
-      let actionContainer = shadowRoot.querySelector<HTMLElement>(
-        'div.flex.flex-row.items-center.flex-nowrap.overflow-hidden.justify-start',
+      // ponytail: action row is in the light DOM of shreddit-post, not shadow root
+      let actionContainer = post.querySelector<HTMLElement>(
+        '[data-testid="action-row"]',
       );
       if (!actionContainer) {
         actionContainer =
-          shadowRoot.querySelector<HTMLElement>('div.shreddit-post-container');
+          post.querySelector<HTMLElement>('div.shreddit-post-container');
       }
       if (!actionContainer) {
-        log.warn('No action container found for post:', post.id);
+        console.warn('[Reddit Image Download] No action container for:', post.id);
         return;
       }
 
@@ -277,9 +260,15 @@ export default defineContentScript({
         handleDownloadClick,
       );
 
+      // ponytail: target share button directly, slot is nested in lazy-loaded faceplate-partial
+      const shareBtn = actionContainer.querySelector(
+        'shreddit-post-share-button[data-action-bar-action="share"]',
+      );
       const shareSlot = actionContainer.querySelector('slot[name="share-button"]');
-      if (shareSlot) {
-        shareSlot.parentNode!.insertBefore(btn, shareSlot.nextSibling);
+      const insertTarget = shareBtn || shareSlot;
+
+      if (insertTarget) {
+        insertTarget.parentNode!.insertBefore(btn, insertTarget.nextSibling);
         log.info('Button injected after share button for post:', post.id);
       } else {
         actionContainer.appendChild(btn);
@@ -343,20 +332,10 @@ export default defineContentScript({
 
         setButtonState(btn, 'probing');
 
-        const probeResponse = (await sendMessageWithRetry({
-          action: 'probe',
-          urls: transformedUrls,
-        })) as { results?: Array<{ available: boolean; url: string }>; error?: string };
-
-        log.info('Probe response:', probeResponse);
-
-        if (probeResponse?.error) {
-          setButtonState(btn, 'error');
-          return;
-        }
+        const probeResults = await probeImages(transformedUrls);
 
         const availableUrls =
-          probeResponse.results
+          probeResults
             ?.filter((r) => r.available)
             .map((r) => r.url) ?? [];
 
